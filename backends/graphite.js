@@ -60,6 +60,7 @@ var flush_stats = function graphite_flush(ts, metrics) {
   var gauges = metrics.gauges;
   var timers = metrics.timers;
   var pctThreshold = metrics.pctThreshold;
+	var uniques = metrics.uniques;
 
   for (key in counters) {
     var value = counters[key];
@@ -125,6 +126,17 @@ var flush_stats = function graphite_flush(ts, metrics) {
 
   for (key in gauges) {
     statString += 'stats.gauges.' + key + ' ' + gauges[key] + ' ' + ts + "\n";
+    numStats += 1;
+  }
+
+
+  for (key in uniques) {
+    var value = uniques[key];
+    var valuePerSecond = value / (flushInterval / 1000); // calculate "per second" rate
+
+    statString += 'stats.'        + key + ' ' + valuePerSecond + ' ' + ts + "\n";
+    statString += 'stats_uniques.'	+ key + ' ' + value          + ' ' + ts + "\n";
+
     numStats += 1;
   }
 

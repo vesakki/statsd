@@ -15,11 +15,22 @@ var counters = {
 var timers = {
   "statsd.packet_process_time": []
 };
+var uniques = {};
+var uniques_flush = {};
 var gauges = {};
 var pctThreshold = null;
 var debugInt, flushInterval, keyFlushInt, server, mgmtServer;
 var startup_time = Math.round(new Date().getTime() / 1000);
 var backendEvents = new events.EventEmitter();
+
+Object.size = function(obj) {
+    var size = 0, key;
+    for (key in obj) {
+        if (obj.hasOwnProperty(key)) size++;
+    }
+    return size;
+};
+
 
 // Load and init the backend from the backends/ directory.
 function loadBackend(config, name) {
@@ -36,15 +47,28 @@ function loadBackend(config, name) {
   }
 };
 
+function aggregate_uniques() {
+	var aggregate = {}
+	for(key in uniques_flush) {
+		uniques_flush[key] -= flushInterval;
+		if(uniques_flush[key] < flushInterval) {
+			aggregate[key] =  Object.size(uniques[key]);
+			delete uniques_flush[key]
+			delete uniques[key]
+		}
+	}
+	return aggregate;
+}
 // Flush metrics to each backend.
 function flushMetrics() {
   var time_stamp = Math.round(new Date().getTime() / 1000);
-
+	
   var metrics_hash = {
     counters: counters,
     gauges: gauges,
     timers: timers,
-    pctThreshold: pctThreshold
+    pctThreshold: pctThreshold,
+		uniques: aggregate_uniques()
   }
 
   // After all listeners, reset the stats
@@ -139,6 +163,20 @@ config.configFile(process.argv[2], function (config, oldConfig) {
             timers[key].push(Number(fields[0] || 0));
           } else if (fields[1].trim() == "g") {
             gauges[key] = Number(fields[0] || 0);
+          } else if (fields[1].trim() == "u") {
+						if(uniques[key]) {
+							// add to existing hash
+							uniques[key][fields[0]] = true;
+						} else {
+							var ht = {}
+							ht[fields[0]]  = true;
+							uniques[key] = ht;
+							if (fields[2] && fields[2].match(/^@([0-9]+)/)) {
+								var flush = (fields[2].match(/^@([0-9\:]+)/)[1]);
+								uniques_flush[key] = Number(flush) * 1000;
+							}
+						}
+						l.log("uniques: " + JSON.stringify(uniques));
           } else {
             if (fields[2] && fields[2].match(/^@([\d\.]+)/)) {
               sampleRate = Number(fields[2].match(/^@([\d\.]+)/)[1]);
@@ -220,6 +258,15 @@ config.configFile(process.argv[2], function (config, oldConfig) {
 
           case "gauges":
             stream.write(util.inspect(gauges) + "\n");
+            stream.write("END\n\n");
+            break;
+
+				  case "uniques":
+						var u = {}
+						for(key in uniques) {
+							u[key] =  Object.size(uniques[key]);
+						}
+						stream.write(util.inspect(u) + "\n");
             stream.write("END\n\n");
             break;
 
