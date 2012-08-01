@@ -64,6 +64,15 @@ StatsD now also supports gauges, arbitrary values, which can be recorded.
 All metrics can also be batch send in a single UDP packet, separated by a
 newline character.
 
+Uniques
+-------
+
+    hourlyvisits:123|u|@3600
+
+Tells StatsD to track distinct values for hourlyvisits over a period of 3600secs. 
+The timer starts when the first event for hourlyvisits is received.
+
+
 Debugging
 ---------
 

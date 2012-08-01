@@ -164,19 +164,18 @@ config.configFile(process.argv[2], function (config, oldConfig) {
           } else if (fields[1].trim() == "g") {
             gauges[key] = Number(fields[0] || 0);
           } else if (fields[1].trim() == "u") {
-						if(uniques[key]) {
-							// add to existing hash
-							uniques[key][fields[0]] = true;
-						} else {
-							var ht = {}
-							ht[fields[0]]  = true;
-							uniques[key] = ht;
-							if (fields[2] && fields[2].match(/^@([0-9]+)/)) {
-								var flush = (fields[2].match(/^@([0-9\:]+)/)[1]);
-								uniques_flush[key] = Number(flush) * 1000;
-							}
-						}
-						l.log("uniques: " + JSON.stringify(uniques));
+			if(uniques[key]) {
+				// add to existing hash
+				uniques[key][fields[0]] = true;
+			} else {
+				var ht = {}
+				ht[fields[0]]  = true;
+				uniques[key] = ht;
+				if (fields[2] && fields[2].match(/^@([0-9]+)/)) {
+					var flush = (fields[2].match(/^@([0-9\:]+)/)[1]);
+					uniques_flush[key] = Number(flush) * 1000;
+				}
+			}
           } else {
             if (fields[2] && fields[2].match(/^@([\d\.]+)/)) {
               sampleRate = Number(fields[2].match(/^@([\d\.]+)/)[1]);
