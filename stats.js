@@ -49,10 +49,10 @@ function loadBackend(config, name) {
 
 function aggregate_uniques() {
 	var aggregate = {}
+	now = new Date().getTime();
 	for(key in uniques_flush) {
-		uniques_flush[key] -= flushInterval;
-		if(uniques_flush[key] < flushInterval) {
-			aggregate[key] =  Object.size(uniques[key]);
+		aggregate[key] =  Object.size(uniques[key]);
+		if (now%uniques_flush[key] < flushInterval) {
 			delete uniques_flush[key]
 			delete uniques[key]
 		}
